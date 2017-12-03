@@ -1,5 +1,3 @@
-// Random map generator
-
 #include "stdafx.h"
 #include <iostream>
 #include <fstream>
@@ -8,19 +6,25 @@
 #include "math.h"
 #include <cstdlib>
 #include <ctime>
+#include <cxxopts.hpp>
 
 using namespace std;
 
 // This function formats the strings of the brush-coordinates
+// Maybe I should put this into it's own file
 	void parsbrush (int brush[9], ofstream& o, string t)
 	{
 
 
+	//ofstream newmap;
 	int numbrush = 6;
 	int numElement = 8;
 	stringstream brushbuff;
 
+	int wait; //just for testing
 
+//	for (int x = 1; x <= numbrush; x++)
+//	{
 	//Add symbols and space
 	for (int i = 0; i <= numElement; i++) 
 	{
@@ -41,44 +45,44 @@ using namespace std;
 	}
 	brushbuff << ")";
 	o << brushbuff.str() << t << endl;
+	//cin >> wait; //systempause for testing
 
 	return;
 	}
 
-//Main Function
-int _tmain(int argc, _TCHAR* argv[])
+	int main(int argc, char* argv[])
 {
-	int mapsize;
-	string mapname;
-	int ambientlight;
-	int randomtype;
-	int randombrushinteger;
-	string roomtextureinput;
-	string padstextureinput;
-	int wait2;
-	//Input Mapsize
-	cout << "Mapsize: ";
-	cin >> mapsize;
+		int mapsize = 1;
+		string mapname = "mapname";
+		int ambientlight = 0;
+		int randomtype = 1;
+		int randombrushinteger = 5;
+		int onlyrandombrushes = 1;
+		string roomtextureinput;
+		string padstextureinput;
+		int wait2;
 
-	cout << endl;
-	cout << "Ambientlight: ";
-	cin >> ambientlight;
+		cxxopts::Options options(argv[0]);
 
-	cout << endl;
-	cout << "Random type: ";
-	cin >> randomtype;
-
-	cout << endl;
-	cout << "Amount of brushes (higher number = less brushes; recommended: 2-10): "; 
-	cin >> randombrushinteger;
+		options.add_options()("mapname", "mapname", cxxopts::value(mapname));
+		options.add_options()("mapsize", "mapsize", cxxopts::value(mapsize));
+		options.add_options()("ambientlight", "ambientlight", cxxopts::value(ambientlight));
+		options.add_options()("onlyrandombrushes", "onlyrandombrushes", cxxopts::value(onlyrandombrushes));
+		options.add_options()("randomtype", "randomtype", cxxopts::value(randomtype));
+		options.add_options()("randombrushinteger", "randombrushinteger", cxxopts::value(randombrushinteger));
 
 
-	// Input Mapname
-	cout << endl;
-	cout << "Mapname: "; // = filename
-	cin >> mapname;
+
+	auto result = options.parse(argc, argv);
+
+	if (mapsize < 500)
+	{
+		mapsize = 500;
+	}
+
 	mapname += ".map"; //add .map in the end
 
+	
 	//Spawnpoint
 	int spawn = mapsize / 2; //in the middle of the map
 	int spawn2 = (sqrt(mapsize))+20; //a bit away from the wall
@@ -93,6 +97,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	//Textures
+	//at some point I will add more textures and also custom textures
 	string texture1, texture2, texture3, texture4, texture5, texture6, texture7, texture8, texture9, texture10;
 	string tcaulk = " common/caulk 0 0 0 0.500000 0.500000 0 4 0";
 	string tmgf = " se_industrial/metal_gold_flake 0 0 0 0.500000 0.500000 0 4 0";
@@ -104,6 +109,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	////////////////BRUSHES FOR THE ROOM///////////////////
 	// This creates a room depending on the size-value
+	// Maybe I will add some more stuff to the basic room in the future. So far it's only 6 Walls.
 	//Groundbrush
 	int b1s1 [9] = {0, m, 8, 0, 0, 8, 0, 0, 0}; //brush 1 side 1
 	int b1s2 [9] = {m, m, -16, 0, m, -16, 0, m, -24}; //brush 1 side 2
@@ -159,13 +165,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	texture2 = twr;
 	// Information
 	newmap << "//Mapname: " << mapname <<"\n";
-	newmap << "//Generated with the random map tool by admafi\n"; 
+	newmap << "//Generated with the random map tool by admafi\n"; //for those who like to open map files in an editor
 	newmap << endl;
 	// Global entity
 	newmap << "//global entity\n";
 	newmap << "{\n"; //global entity start
 	newmap << "\"ambient\" \""<<ambientlight<<"\"\n"; //custom ambientlight
-	newmap << "\"message\" \"Generated with the random map tool by admafi\"\n"; 
+	newmap << "\"message\" \"Generated with the random map tool by admafi\"\n"; //maybe make this with userinput later
 	newmap << "\"classname\" \"worldspawn\"\n"; //this needs to be here
 	newmap << endl;
 	//Generate the room depending on the mapsize
@@ -229,24 +235,61 @@ int _tmain(int argc, _TCHAR* argv[])
 	newmap << "//Randomly generated brushes\n"; 
 	
 	int r1,r2,r3,r4,r5,r6,r7,r8,r9,r10;
+	int proc1 = 20;
 	int maxrandombrushes = mapsize/randombrushinteger;
 	int randombrushrange = mapsize - sqrt(mapsize);
 	int maxrandombrushsize = mapsize-sqrt(mapsize);
 	int maxrandombrushheight = mapsize-(mapsize/2);
 	int maxrandombrushheight2 = mapsize / 16;
 	int minrandombrushsize = 20;
-	int minrandombrushsize2 = 5;
+	int minrandombrushsize2 = 1;
+	//int rb1[9],rb2[9],rb3[9],rb4[9],rb5[9],rb6[9];
 	srand(time(0));
 	for (int r=0; r<= maxrandombrushes; r++)
 	{
+		if (r<5)
+		{ 
+		proc1+= 2;
+		}
+		if (r<10)
+		{
+			proc1 += 4;
+		}
+		if (r>10)
+		{
+			proc1 += 8;
+		} 
 
+		//proc1 *= 2;
+
+	//randomnumbergenerator
+	//for (int r=0; r<= maxrandombrushes; r++)
+	//{
+	if (onlyrandombrushes == 1)
+	{
 	r1 = rand() % maxrandombrushsize + minrandombrushsize;
 	r2 = rand() % maxrandombrushsize + minrandombrushsize;
 	r3 = rand() % maxrandombrushheight + minrandombrushsize;
 	r4 = rand() % maxrandombrushheight2 + minrandombrushsize;
+	}
+	else
+	{
+		r1 = rand() % proc1 + minrandombrushsize2;
+		r2 = rand() % proc1 + minrandombrushsize2;
+		r3 = rand() % proc1 + minrandombrushsize2;
+		r4 = rand() % proc1 + minrandombrushsize2;
+	}
+
 	r5 = rand() % maxrandombrushsize + minrandombrushsize; //for complex objects
 	r6 = rand() % maxrandombrushsize + minrandombrushsize; //for complex objects
-	
+
+	/*if (r1 == r2 || r2 == r1 || r2 == r3 || r3 == r2 || r3 == r1 || r1 == r3)
+	{
+		return 0;
+	}
+	}*/
+	// I should probably make these objects in a function and then call them depending on the randomtype.
+	// It should also be possible to have different objects in one map
 
 	if (randomtype == 1) //small platforms in the air
 	{
@@ -386,7 +429,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	newmap << "\"classname\" \"light\"\n";
 	newmap << "}\n"; 
 	}
-	
+	//Random lightentities
+	/*int lightr1;
+	srand(time(0));
+	for (int rl = 0; rl <= maxrandombrushes; rl++)
+	{
+		lightr1 = rand() % maxrandombrushsize + minrandombrushsize;
+	}
+	newmap << "//Random Lightentities\n";
+	newmap << "{\n"; //randomlight
+	newmap << "\"origin\" \"" << light1 << " " << light2 + (sqrt(mapsize)) * 10 * y << " " << light3 << "\"\n";
+	newmap << "\"classname\" \"light\"\n";
+	newmap << "}\n";
+	*/
 	//Raceentities
 	newmap << "//Raceentities\n";
 	newmap << "{\n";
