@@ -1,0 +1,26 @@
+TODO:
+- Better structure of the code
+- Add more complex objects
+- Add strafe-pad option
+- Allow different kind of brushes and objects in the same map
+- Allow more or custom textures
+- Find a way so brushes don't overlap
+- Find a better way to add race and spawn entities
+- Better lights
+	- More light-options [x]
+	- random lights [x]
+	- Lightcolors
+	- Lightbrightness [x]
+	- Ambientlightcolor
+- Add a message to worldspawn [x]
+	- make it with user-input [x]
+- Allow music
+- Allow slick surfaces
+- Optional Teleport/hurt-triggers on bottom
+- Gui
+- Support more games/gamemodes
+- Generate BSPs
+- print out debug-textfile
+- Coordinates = X / Y / Z
+- make basic room not as high
+
