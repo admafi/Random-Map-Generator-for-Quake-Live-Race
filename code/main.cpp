@@ -1,3 +1,8 @@
+// Random map generator by admafi
+//
+
+
+
 #include "stdafx.h"
 #include <iostream>
 #include <fstream>
@@ -21,7 +26,6 @@ using namespace std;
 	int numElement = 8;
 	stringstream brushbuff;
 
-	int wait; //just for testing
 
 //	for (int x = 1; x <= numbrush; x++)
 //	{
@@ -50,6 +54,7 @@ using namespace std;
 	return;
 	}
 
+//Main Function
 	int main(int argc, char* argv[])
 {
 		int mapsize = 1;
@@ -58,18 +63,37 @@ using namespace std;
 		int randomtype = 1;
 		int randombrushinteger = 5;
 		int onlyrandombrushes = 1;
+		string message = "Generated with the random map tool by admafi";
+		string author = "admafi";
+		int minlight = 0;
+		int minvertexlight = 0;
+		bool celshader = false;
+		bool raceentities = true;
+		int randomlights = 1;
+		int lightbrightness = 300;
+		string music = "bla.wav"; 
 		string roomtextureinput;
 		string padstextureinput;
-		int wait2;
+
 
 		cxxopts::Options options(argv[0]);
 
-		options.add_options()("mapname", "mapname", cxxopts::value(mapname));
-		options.add_options()("mapsize", "mapsize", cxxopts::value(mapsize));
-		options.add_options()("ambientlight", "ambientlight", cxxopts::value(ambientlight));
-		options.add_options()("onlyrandombrushes", "onlyrandombrushes", cxxopts::value(onlyrandombrushes));
-		options.add_options()("randomtype", "randomtype", cxxopts::value(randomtype));
-		options.add_options()("randombrushinteger", "randombrushinteger", cxxopts::value(randombrushinteger));
+		options.add_options()
+		("mapname", "mapname", cxxopts::value(mapname))
+		("mapsize", "mapsize", cxxopts::value(mapsize))
+		("ambientlight", "ambientlight", cxxopts::value(ambientlight))
+		("onlyrandombrushes", "onlyrandombrushes", cxxopts::value(onlyrandombrushes))
+		("randomtype", "randomtype", cxxopts::value(randomtype))
+		("randombrushinteger", "randombrushinteger", cxxopts::value(randombrushinteger))
+		("randomlights", "randomlights", cxxopts::value(randomlights))
+		("lightbrightness", "lightbrightness", cxxopts::value(lightbrightness))
+		("celshader", "celshader", cxxopts::value(celshader))
+		("raceentities", "raceentities", cxxopts::value(raceentities))
+		("message", "message", cxxopts::value(message))
+		("author", "author", cxxopts::value(author))
+		("minlight", "minlight", cxxopts::value(minlight))
+		("minvertexlight", "minvertexlight", cxxopts::value(minvertexlight))
+		;
 
 
 
@@ -165,13 +189,35 @@ using namespace std;
 	texture2 = twr;
 	// Information
 	newmap << "//Mapname: " << mapname <<"\n";
-	newmap << "//Generated with the random map tool by admafi\n"; //for those who like to open map files in an editor
+	newmap << "//" << message <<"\n"; //custom message
 	newmap << endl;
 	// Global entity
 	newmap << "//global entity\n";
 	newmap << "{\n"; //global entity start
+	if (author.size() != 0) //is currently always true
+	{
+		newmap << "\"author\" \"" << author << "\"\n"; //custom author
+	}
+	{
+		newmap << "\"ambient\" \"" << ambientlight << "\"\n"; //custom ambientlight
+	}
+	if (ambientlight>0)
+	{
 	newmap << "\"ambient\" \""<<ambientlight<<"\"\n"; //custom ambientlight
-	newmap << "\"message\" \"Generated with the random map tool by admafi\"\n"; //maybe make this with userinput later
+	}
+	if (minlight>0)
+	{
+		newmap << "\"_minlight\" \""<<minlight<<"\"\n"; //custom minlight
+	}
+	if (minvertexlight>0)
+	{
+		newmap << "\"_minvertexlight\" \""<<minvertexlight<<"\"\n"; //custom minvertexlight
+	}
+	if (celshader)
+	{
+	newmap << "\"_celshader\" \"cel/ink\"\n"; //celshader
+	}
+	newmap << "\"message\" \""<< message <<"\"\n"; //custom message
 	newmap << "\"classname\" \"worldspawn\"\n"; //this needs to be here
 	newmap << endl;
 	//Generate the room depending on the mapsize
@@ -415,34 +461,51 @@ using namespace std;
 	newmap << "{\n"; //light1
 	newmap << "\"origin\" \""<<light1<<" "<<light2+(sqrt(mapsize))*10*y<<" "<<light3<<"\"\n";
 	newmap << "\"classname\" \"light\"\n";
+	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n"; 
 	newmap << "{\n"; //light2
 	newmap << "\"origin\" \""<<light4<<" "<<light2+(sqrt(mapsize))*10*y<<" "<<light3<<"\"\n";
 	newmap << "\"classname\" \"light\"\n";
+	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n"; 
 	newmap << "{\n"; //light3
 	newmap << "\"origin\" \""<<light2+(sqrt(mapsize))*10*y<<" "<<light1<<" "<<light3<<"\"\n";
 	newmap << "\"classname\" \"light\"\n";
+	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n"; 
 	newmap << "{\n"; //light4
 	newmap << "\"origin\" \""<<light2+(sqrt(mapsize))*10*y<<" "<<light4<<" "<<light3<<"\"\n";
 	newmap << "\"classname\" \"light\"\n";
+	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n"; 
 	}
 	//Random lightentities
-	/*int lightr1;
+	int lightr1;
+	int lightr2;
+	int lightr3;
+	int maxrandomlights = (mapsize / randombrushinteger)/10;
+	int maxrandomlightsize = mapsize - sqrt(mapsize);
+	int minrandomlightsize = 20;
 	srand(time(0));
-	for (int rl = 0; rl <= maxrandombrushes; rl++)
+	if (randomlights == 1)
+	{ 
+	for (int l = 0; l <= maxrandomlights; l++)
 	{
-		lightr1 = rand() % maxrandombrushsize + minrandombrushsize;
-	}
+		lightr1 = rand() % maxrandomlightsize + minrandomlightsize;
+		lightr2 = rand() % maxrandomlightsize + minrandomlightsize;
+		lightr3 = rand() % maxrandomlightsize + minrandomlightsize;
+	
 	newmap << "//Random Lightentities\n";
 	newmap << "{\n"; //randomlight
-	newmap << "\"origin\" \"" << light1 << " " << light2 + (sqrt(mapsize)) * 10 * y << " " << light3 << "\"\n";
+	newmap << "\"origin\" \"" << lightr1 << " " << lightr2 << " " << lightr3 << "\"\n";
 	newmap << "\"classname\" \"light\"\n";
+	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n";
-	*/
+	}
+	}
 	//Raceentities
+	if (raceentities)
+	{ 
 	newmap << "//Raceentities\n";
 	newmap << "{\n";
 	newmap << "\"target\" \"end\"\n";
@@ -456,9 +519,14 @@ using namespace std;
 	newmap << "\"origin\" \""<<r1<<" "<<r2<<" "<<"40"<<"\"\n";
 	newmap << "\"classname\" \"race_point\"\n";
 	newmap << "}\n"; 
+	}
 	//Close File
 	newmap.close();
 
+	//Start q3map2
+	//system("start \"C:\Program Files (x86)\GtkRadiant\q3map2.exe\" -meta -vis -fast -light -fast -patchshadows \"E:\Dokumente\coding\ConsoleApplication1\Debug\a.map\" \")"); // start q3map2
+	//system("start q3map2.exe");
+	//The End
 	return 0;
 }
 
