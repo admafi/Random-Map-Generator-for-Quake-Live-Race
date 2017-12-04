@@ -15,6 +15,9 @@
 
 using namespace std;
 
+
+
+
 // This function formats the strings of the brush-coordinates
 // Maybe I should put this into it's own file
 	void parsbrush (int brush[9], ofstream& o, string t)
@@ -27,8 +30,6 @@ using namespace std;
 	stringstream brushbuff;
 
 
-//	for (int x = 1; x <= numbrush; x++)
-//	{
 	//Add symbols and space
 	for (int i = 0; i <= numElement; i++) 
 	{
@@ -49,7 +50,6 @@ using namespace std;
 	}
 	brushbuff << ")";
 	o << brushbuff.str() << t << endl;
-	//cin >> wait; //systempause for testing
 
 	return;
 	}
@@ -58,7 +58,7 @@ using namespace std;
 	int main(int argc, char* argv[])
 {
 		int mapsize = 1;
-		string mapname = "mapname";
+		string mapname;
 		int ambientlight = 0;
 		int randomtype = 1;
 		int randombrushinteger = 5;
@@ -71,9 +71,15 @@ using namespace std;
 		bool raceentities = true;
 		int randomlights = 1;
 		int lightbrightness = 300;
+		string randomtextstr;
+		int randomtextint;
 		string music = "bla.wav"; 
 		string roomtextureinput;
 		string padstextureinput;
+		int maxrandomlightsvalue = 10;
+		int maxsemirandomlightsvalue = 10;
+		bool enablelightgrid = true;
+		bool semirandomlights = true;
 
 
 		cxxopts::Options options(argv[0]);
@@ -93,6 +99,10 @@ using namespace std;
 		("author", "author", cxxopts::value(author))
 		("minlight", "minlight", cxxopts::value(minlight))
 		("minvertexlight", "minvertexlight", cxxopts::value(minvertexlight))
+		("maxrandomlightsvalue", "maxrandomlightsvalue", cxxopts::value(maxrandomlightsvalue))
+		("enablelightgrid", "enablelightgrid", cxxopts::value(enablelightgrid))
+		("semirandomlights", "semirandomlights", cxxopts::value(semirandomlights))
+		("maxsemirandomlightsvalue", "maxsemirandomlightsvalue", cxxopts::value(maxsemirandomlightsvalue))
 		;
 
 
@@ -102,6 +112,16 @@ using namespace std;
 	if (mapsize < 500)
 	{
 		mapsize = 500;
+	}
+
+	//random number when using random as mapname
+	srand(time(0));
+	randomtextint = rand() % 9999;
+	randomtextstr = std::to_string(randomtextint);
+
+	if (mapname == "random")
+	{
+	mapname += randomtextstr;
 	}
 
 	mapname += ".map"; //add .map in the end
@@ -189,7 +209,10 @@ using namespace std;
 	texture2 = twr;
 	// Information
 	newmap << "//Mapname: " << mapname <<"\n";
+	if (message.size() != 0) //is currently always true
+	{ 
 	newmap << "//" << message <<"\n"; //custom message
+	}
 	newmap << endl;
 	// Global entity
 	newmap << "//global entity\n";
@@ -197,9 +220,6 @@ using namespace std;
 	if (author.size() != 0) //is currently always true
 	{
 		newmap << "\"author\" \"" << author << "\"\n"; //custom author
-	}
-	{
-		newmap << "\"ambient\" \"" << ambientlight << "\"\n"; //custom ambientlight
 	}
 	if (ambientlight>0)
 	{
@@ -217,7 +237,10 @@ using namespace std;
 	{
 	newmap << "\"_celshader\" \"cel/ink\"\n"; //celshader
 	}
-	newmap << "\"message\" \""<< message <<"\"\n"; //custom message
+	if (message.size() != 0) //is currently always true
+	{
+		newmap << "\"message\" \"" << message << "\"\n"; //custom message
+	}
 	newmap << "\"classname\" \"worldspawn\"\n"; //this needs to be here
 	newmap << endl;
 	//Generate the room depending on the mapsize
@@ -289,8 +312,14 @@ using namespace std;
 	int maxrandombrushheight2 = mapsize / 16;
 	int minrandombrushsize = 20;
 	int minrandombrushsize2 = 1;
-	//int rb1[9],rb2[9],rb3[9],rb4[9],rb5[9],rb6[9];
+	
+	//race-entities
+	int raceoriginstart1 = mapsize / 2; //in the middle of the map
+	int raceoriginstart2 = (sqrt(mapsize)) + 120; //a bit away from the wall and from the spawn entity
 	srand(time(0));
+	int raceoriginend1 = rand() % maxrandombrushsize + minrandombrushsize;
+	int raceoriginend2 = mapsize - 100;
+	//int rb1[9],rb2[9],rb3[9],rb4[9],rb5[9],rb6[9];
 	for (int r=0; r<= maxrandombrushes; r++)
 	{
 		if (r<5)
@@ -454,8 +483,11 @@ using namespace std;
 	newmap << "\"classname\" \"info_player_deathmatch\"\n";
 	newmap << "}\n"; 
 	//Lightentities
+	int lightgrid = (sqrt(mapsize)) / 10;
+	if (enablelightgrid)
+	{ 
 	newmap << "//Lightentities\n";
-	int lightgrid = (sqrt(mapsize))/10;
+
 	for (int y = 0; y < lightgrid; y++) 
 	{
 	newmap << "{\n"; //light1
@@ -479,11 +511,12 @@ using namespace std;
 	newmap << "\"light\" \"" << lightbrightness << "\"\n";
 	newmap << "}\n"; 
 	}
+	}
 	//Random lightentities
 	int lightr1;
 	int lightr2;
 	int lightr3;
-	int maxrandomlights = (mapsize / randombrushinteger)/10;
+	int maxrandomlights = (mapsize / randombrushinteger)/maxrandomlightsvalue;
 	int maxrandomlightsize = mapsize - sqrt(mapsize);
 	int minrandomlightsize = 20;
 	srand(time(0));
@@ -503,20 +536,51 @@ using namespace std;
 	newmap << "}\n";
 	}
 	}
+
+	//Semi-random lightentities
+	//these lights should shed light on the way between the two race-entities
+	srand(time(0));
+
+	//int maxsemirandomlights = (mapsize / randombrushinteger) / maxsemirandomlightsvalue;
+	int maxsemirandomlights = ((sqrt(mapsize))-5) / 5;
+	int getrandomlightsvalue1;
+	int getrandomlightsvalue2;
+	int getrandomlightsvalue1addvalue;
+	int getrandomlightsvalue2addvalue;
+	int slopebetweenracepoints = (raceoriginend2 - raceoriginstart2) / (raceoriginend1 - raceoriginstart1);
+
+	
+	if (semirandomlights)
+	{
+		for (int l = 0; l <= maxsemirandomlights; l++)
+		{
+			int raceoriginstart2new = raceoriginstart2 + ((sqrt(mapsize)) * 5 * l);
+			int raceoriginstart1new = raceoriginstart1 + (raceoriginstart2new / slopebetweenracepoints);
+
+
+			newmap << "//Semi-Random Lightentities\n";
+			newmap << "{\n"; //semi-randomlight
+			newmap << "\"origin\" \"" << raceoriginstart1new << " " << raceoriginstart2new << " " << "150" << "\"\n";
+			newmap << "\"classname\" \"light\"\n";
+			newmap << "\"light\" \"" << lightbrightness << "\"\n";
+			newmap << "}\n";
+		}
+	}
 	//Raceentities
+
 	if (raceentities)
 	{ 
 	newmap << "//Raceentities\n";
 	newmap << "{\n";
 	newmap << "\"target\" \"end\"\n";
 	newmap << "\"spawnflags\" \"1\"\n";
-	newmap << "\"origin\" \""<<spawn<<" "<<spawn2+100<<" "<<"40"<<"\"\n";
+	newmap << "\"origin\" \""<< raceoriginstart1 <<" "<< raceoriginstart2<<" "<<"40"<<"\"\n";
 	newmap << "\"classname\" \"race_point\"\n";
 	newmap << "}\n"; 
 	newmap << "{\n";
 	newmap << "\"targetname\" \"end\"\n";
 	newmap << "\"spawnflags\" \"1\"\n";
-	newmap << "\"origin\" \""<<r1<<" "<<r2<<" "<<"40"<<"\"\n";
+	newmap << "\"origin\" \""<< raceoriginend1 <<" "<< raceoriginend2 <<" "<<"40"<<"\"\n";
 	newmap << "\"classname\" \"race_point\"\n";
 	newmap << "}\n"; 
 	}
