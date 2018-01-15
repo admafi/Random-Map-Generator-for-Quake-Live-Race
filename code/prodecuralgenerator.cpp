@@ -21,7 +21,34 @@ using namespace std;
 using namespace std::tr2::sys;
 namespace fs = experimental::filesystem;
 
+bool IsParenthesesOrDash(char c)
+{
+    switch(c)
+    {
+    case '-':
+        return true;
+    default:
+        return false;
+    }
+}
 
+class IsChars
+{
+public:
+	IsChars(const char* charsToRemove) : chars(charsToRemove) {};
+
+	bool operator()(char c)
+	{
+		for (const char* testChar = chars; *testChar != 0; ++testChar)
+		{
+			if (*testChar == c) { return true; }
+		}
+		return false;
+	}
+
+private:
+	const char* chars;
+};
 
 // This function formats the strings of the brush-coordinates
 void parsbrush(int brush[9], ofstream& o, string t)
@@ -76,17 +103,19 @@ string slurp(ifstream& in, int numblocks, int procnumx, int procnumy)
 	string strr;
 	string strr2;
 	string outputstring;
+	char chars[] = "-";
 
 	sstr << in.rdbuf();
 	strr = sstr.str();
-	strr.erase(remove_if(strr.begin(), strr.end(), [](char c) { return  !isdigit(c) && !isspace(c); }), strr.end()); //delete everything but numbers
+	//strr.erase(remove_if(strr.begin(), strr.end(), [](char c) { return  !isdigit(c) && !isspace(c) && !IsParenthesesOrDash; }), strr.end()); //delete everything but numbers !!! need to keep -
+	strr.erase(std::remove_if(strr.begin(), strr.end(), IsChars("(){}")), strr.end());
 	sstr2 << strr;
 
 	//erase numbers we dont need (from the end)
 	while (sstr2)
 	{
 		getline(sstr2, searchstring);
-		searchstring = searchstring.substr(0, searchstring.size() - 28);
+		searchstring = searchstring.substr(0, searchstring.size() - 42);
 		sstr3 << searchstring;
 	}
 
@@ -102,8 +131,8 @@ string slurp(ifstream& in, int numblocks, int procnumx, int procnumy)
 	//do your math to the prefab vectors
 	int u = 0;
 	int e = 0;
-	int xvalue = 256 * procnumx;
-	int yvalue = 256 * procnumy;
+	int xvalue = procnumx;
+	int yvalue = procnumy;
 	int d;
 
 	//for (d = 0; d < numblocks; d++)
@@ -270,7 +299,7 @@ int main(int argc, char* argv[])
 		mapname += randomtextstr;
 	}
 
-	mapname += ".map"; //add .map in the end
+	mapname += "test.map"; //add .map in the end
 
 
 					   //Spawnpoint
@@ -459,32 +488,46 @@ int main(int argc, char* argv[])
 	parsbrush(b6s6, newmap, texture1);
 	newmap << "}\n";
 	///////////////////GENERATE PROCEDURAL BRUSHES//////////////////
-	newmap << "//Randomly generated brushes\n";
+	newmap << "//Procedural placed brushes from prefabs\n";
 	//Read prefabs from map files
 	ifstream prefabin;
 	string temppath;
 	string path = "prefabs";
-	int b = 0;
-	int brushposx = 0;
-	int brushposy = 0;
+	int prefabcount = 0;
+	int tilesizex = 256; // in units
+	int tilesizey = 256; // in units
+	int gridsizex = 5;
+	int gridsizey = 10;
 	for (auto & p : fs::recursive_directory_iterator(path))
 	{
 
-		b++; //count the prefab files
+		prefabcount++; //count the prefab files
+		int brushposx = 0;
+		int brushposy = 0;
+		int gridcounter = 0;
 
-	
-			for (int v = 0; v < b; v++) //do it for all prefabs
+			for (int v = 0; v < prefabcount; v++) //do it for all prefabs
 			{
-				brushposx++;
-				brushposy++;
+
+				gridcounter++;
+
+				brushposx = brushposx + tilesizex;
+
+				if (gridcounter == gridsizex)
+				{
+				brushposy = brushposy + tilesizey;
+				brushposx = tilesizex;
+				gridcounter = 1;
+				}
+
 			}
 				if (is_regular_file(p))
 				{
 			temppath = p.path().string();
 			ifstream prefabin(temppath.c_str());
 			//ifstream prefabin("prefabs/prefab2.map");
-			newmap << "//prefab # " << b << "\n";
-			newmap << slurp(prefabin, 9, brushposx, brushposy);
+			newmap << "//prefab # " << prefabcount << "\n";
+			newmap << slurp(prefabin, prefabcount, brushposx, brushposy);
 			newmap << endl;
 			newmap << endl;
 			}
