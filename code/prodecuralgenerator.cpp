@@ -61,7 +61,7 @@ void parsbrush(int brush[9], ofstream& o, string t)
 
 
 //This function reads in the prefabs and then formats them
-string slurp(ifstream& in, int procnumx, int procnumy)
+string slurp(ifstream& in, int numblocks, int procnumx, int procnumy)
 {
 	const int numcount = 5000;
 	int inputbrush1[numcount];
@@ -99,11 +99,15 @@ string slurp(ifstream& in, int procnumx, int procnumy)
 	}
 
 
-	//do your math tot the prefab vectors
+	//do your math to the prefab vectors
 	int u = 0;
 	int e = 0;
 	int xvalue = 256 * procnumx;
 	int yvalue = 256 * procnumy;
+	int d;
+
+	//for (d = 0; d < numblocks; d++)
+	//{ }
 	for (u = 0; u < values.size(); u++)
 	{
 		e++;
@@ -343,11 +347,7 @@ int main(int argc, char* argv[])
 
 
 
-	//Read prefabs from map files
-	ifstream prefabin;
-	string temppath;
-	string path = "prefabs";
-	//ifstream prefabin("prefabs/prefab1.map");
+
 
 
 
@@ -460,19 +460,35 @@ int main(int argc, char* argv[])
 	newmap << "}\n";
 	///////////////////GENERATE PROCEDURAL BRUSHES//////////////////
 	newmap << "//Randomly generated brushes\n";
+	//Read prefabs from map files
+	ifstream prefabin;
+	string temppath;
+	string path = "prefabs";
+	int b = 0;
+	int brushposx = 0;
+	int brushposy = 0;
 	for (auto & p : fs::recursive_directory_iterator(path))
 	{
 
-		if (is_regular_file(p))
-		{
+		b++; //count the prefab files
+
+	
+			for (int v = 0; v < b; v++) //do it for all prefabs
+			{
+				brushposx++;
+				brushposy++;
+			}
+				if (is_regular_file(p))
+				{
 			temppath = p.path().string();
 			ifstream prefabin(temppath.c_str());
-			newmap << "//prefabs\n";
-			newmap << slurp(prefabin, 1, 2);
+			//ifstream prefabin("prefabs/prefab2.map");
+			newmap << "//prefab # " << b << "\n";
+			newmap << slurp(prefabin, 9, brushposx, brushposy);
 			newmap << endl;
 			newmap << endl;
-
-		}
+			}
+	
 	}
 
 	int r1, r2, r3, r4, r5, r6, r7, r8, r9, r10;
